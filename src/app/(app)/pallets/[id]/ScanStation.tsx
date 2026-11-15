@@ -94,7 +94,7 @@ export function ScanStation(props: {
       if (withProduct && result?.status === "found") {
         draft = { ...result.draft, title: title || result.draft.title, retail_price: retail ? Number(retail) : null };
       }
-      if (withProduct && !result && title) {
+      if (withProduct && (!result || result.status === "not_found") && title) {
         draft = blankDraft(title, retail ? Number(retail) : null);
       }
       const saved = await receiveItem({

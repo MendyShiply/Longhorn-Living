@@ -16,7 +16,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
   const settings = await getSettings(supabase);
   const { data: item } = await supabase
     .from("items")
-    .select("*, product:products(*), load:loads(id, code), pallet:pallets(id, number)")
+    .select("*, product:products(*), load:loads(id, code, status), pallet:pallets(id, number)")
     .eq("id", id)
     .single();
   if (!item) notFound();
@@ -29,7 +29,8 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
   ]);
 
   const product = item.product as Product | null;
-  const load = item.load as { id: string; code: string };
+  const load = item.load as { id: string; code: string; status: string };
+  const loadComplete = load.status === "complete";
   const pallet = item.pallet as { id: string; number: number } | null;
   const suggested = suggestPrice(product?.retail_price, item.condition as ItemCondition | null, settings);
   const saveItem = updateItem.bind(null, id);
@@ -57,7 +58,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
           <h1 className="h1">{product?.title ?? "Unidentified item"}</h1>
           <div className="mt-1 flex flex-wrap gap-2 text-sm">
             <span className="rounded-full bg-brand-50 px-2 py-0.5 text-brand-700">{STATUS_LABELS[item.status as ItemStatus]}</span>
-            {item.is_built && <span className="rounded-full bg-green-100 px-2 py-0.5 text-green-800">Built</span>}
+            {item.is_built && item.status !== "built" && <span className="rounded-full bg-green-100 px-2 py-0.5 text-green-800">Assembled</span>}
           </div>
         </div>
         <div className="flex gap-2">
@@ -152,7 +153,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
 
       <section className="card">
         <h2 className="mb-3 text-lg font-semibold">This unit</h2>
-        <form action={saveItem} className="grid gap-3 md:grid-cols-2">
+        <form key={`${item.status}-${item.updated_at}-${item.is_built}-${item.list_price}`} action={saveItem} className="grid gap-3 md:grid-cols-2">
           <div>
             <label className="label">Condition</label>
             <select name="condition" defaultValue={item.condition ?? ""} className="input">
@@ -196,8 +197,14 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
           </div>
           {role !== "worker" && cost && (
             <p className="muted md:col-span-2">
-              Cost basis (share of load cost): <b>{money(cost.cost_basis)}</b>
-              {item.list_price ? ` · Profit at this price: ${money(Number(item.list_price) - Number(cost.cost_basis))}` : ""}
+              {loadComplete ? (
+                <>
+                  Cost basis (share of load cost): <b>{money(cost.cost_basis)}</b>
+                  {item.list_price ? ` · Profit at this price: ${money(Number(item.list_price) - Number(cost.cost_basis))}` : ""}
+                </>
+              ) : (
+                "Cost and profit per item show once every pallet in this load is unpacked and the load is marked complete."
+              )}
             </p>
           )}
           <button className="btn-primary md:col-span-2">Save</button>
@@ -237,7 +244,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
             <p>
               Sold on {sale.platform ?? "?"} for <b>{money(sale.sale_price)}</b> (fees {money(sale.fees)}) on{" "}
               {new Date(sale.sold_at).toLocaleDateString()} {sale.buyer_name ? `to ${sale.buyer_name}` : ""}
-              {cost && <> · Profit <b>{money(Number(sale.sale_price) - Number(sale.fees) - Number(cost.cost_basis))}</b></>}
+              {cost && loadComplete && <> · Profit <b>{money(Number(sale.sale_price) - Number(sale.fees) - Number(cost.cost_basis))}</b></>}
             </p>
           ) : (
             <form action={sold} className="grid gap-3 md:grid-cols-2">

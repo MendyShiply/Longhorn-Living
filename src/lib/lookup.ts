@@ -47,7 +47,7 @@ export async function lookupCode(
   }
 
   if (!aiEnabled()) {
-    return { status: "not_found", code, kind, message: "Not in the catalog. AI lookup is off (no ANTHROPIC_API_KEY), so enter it by hand." };
+    return { status: "not_found", code, kind, message: "Not found in our catalog or the barcode database. AI search isn't switched on yet, so type the product name and retail price below." };
   }
 
   if (kind === "lpn" && !opts.images?.length && !opts.hint) {
