@@ -1,0 +1,854 @@
+<title>Longhorn Living Preview</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+<style>
+/* Layout: phone first warehouse app. Sticky header, content column, bottom tabs on phones, top tabs on wide screens. */
+:root {
+  --bg: #f6f3ef;
+  --surface: #ffffff;
+  --surface-2: #f1ebe4;
+  --line: #e3dbd2;
+  --fg: #1f1a16;
+  --muted: #74685d;
+  --accent: #bf5700;
+  --accent-strong: #a34a00;
+  --accent-soft: #fbeadb;
+  --on-accent: #ffffff;
+  --good: #1d7a46;
+  --good-soft: #dff3e7;
+  --warn: #9a5b00;
+  --warn-soft: #fdf0d5;
+  --bad: #b42318;
+  --bad-soft: #fde4e1;
+  --info: #1f5fa8;
+  --info-soft: #e1ecfa;
+  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #171310; --surface: #221d19; --surface-2: #2b2520; --line: #3a322b; --fg: #f3ece5; --muted: #ab9e92;
+    --accent: #f08a3c; --accent-strong: #ffa25c; --accent-soft: #3d2614; --on-accent: #1a0f06;
+    --good: #5fd08f; --good-soft: #173525; --warn: #f2b84b; --warn-soft: #3a2a10; --bad: #ff8a80; --bad-soft: #3d1b18;
+    --info: #8ab8f0; --info-soft: #182a40; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #171310; --surface: #221d19; --surface-2: #2b2520; --line: #3a322b; --fg: #f3ece5; --muted: #ab9e92;
+  --accent: #f08a3c; --accent-strong: #ffa25c; --accent-soft: #3d2614; --on-accent: #1a0f06;
+  --good: #5fd08f; --good-soft: #173525; --warn: #f2b84b; --warn-soft: #3a2a10; --bad: #ff8a80; --bad-soft: #3d1b18;
+  --info: #8ab8f0; --info-soft: #182a40; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.12rem; }
+a { color: var(--accent); }
+button, input, select, textarea { font: inherit; color: inherit; }
+.mono { font-family: var(--font-mono); font-size: 0.82em; }
+.muted { color: var(--muted); font-size: 0.9rem; }
+.num { font-variant-numeric: tabular-nums; }
+
+header.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--surface); border-bottom: 1px solid var(--line);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.top-inner { max-width: 1040px; margin: 0 auto; display: flex; align-items: center; gap: 16px; padding-block: 10px; flex-wrap: wrap; }
+.brand { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; color: var(--accent); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+.brand svg { width: 28px; height: 18px; }
+.demo-pill { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; background: var(--warn-soft); color: var(--warn); padding: 3px 8px; border-radius: 999px; font-weight: 600; }
+.top-tabs { display: none; gap: 2px; margin-left: 8px; }
+.top-tabs a { text-decoration: none; color: var(--muted); padding: 7px 11px; border-radius: 8px; font-weight: 500; font-size: 0.92rem; }
+.top-tabs a.on { background: var(--accent-soft); color: var(--accent-strong); }
+.reset { margin-left: auto; background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 0.85rem; }
+
+main {
+  max-width: 1040px; margin: 0 auto; padding-block: 18px 110px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 16px;
+}
+nav.bottom {
+  position: fixed; inset: auto 0 0 0; z-index: 5; background: var(--surface); border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px);
+}
+nav.bottom a { display: grid; justify-items: center; gap: 2px; padding: 8px 0 7px; text-decoration: none; color: var(--muted); font-size: 0.7rem; }
+nav.bottom a svg { width: 22px; height: 22px; }
+nav.bottom a.on { color: var(--accent); font-weight: 600; }
+nav.bottom a.scan-tab span.dot { background: var(--accent); color: var(--on-accent); border-radius: 12px; padding: 3px 10px; display: grid; place-items: center; }
+@media (min-width: 800px) {
+  .top-tabs { display: flex; }
+  nav.bottom { display: none; }
+  main { padding-block: 24px 48px; }
+}
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.between { justify-content: space-between; }
+.grid2 { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.stats { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; text-decoration: none; color: var(--fg); display: grid; gap: 2px; }
+a.stat:hover { border-color: var(--accent); }
+.stat b { font-family: var(--font-display); font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.stat.good b { color: var(--good); }
+.stat.bad b { color: var(--bad); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; padding: 10px 16px; font-weight: 600; font-size: 0.93rem; cursor: pointer; text-decoration: none; border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn.primary:hover { background: var(--accent-strong); }
+.btn.big { padding: 14px 18px; font-size: 1rem; width: 100%; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.btn:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.btns { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+
+label.f { display: grid; gap: 4px; font-size: 0.86rem; font-weight: 500; color: var(--muted); }
+input.in, select.in, textarea.in { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px 12px; font-size: 1rem; color: var(--fg); }
+textarea.in { font-size: 0.9rem; }
+
+.list { display: grid; min-width: 0; }
+.panel > *, main > *, .list > * { min-width: 0; }
+.list > a, .list > div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); text-decoration: none; color: var(--fg); align-items: center; }
+.list > :first-child { border-top: 0; }
+.list .grow { min-width: 0; flex: 1; }
+.list .t { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.chip { justify-self: start; display: inline-block; font-size: 0.74rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+.chip.received, .chip.queued, .chip.open { background: var(--warn-soft); color: var(--warn); }
+.chip.identified, .chip.built { background: var(--info-soft); color: var(--info); }
+.chip.photographed { background: var(--accent-soft); color: var(--accent-strong); }
+.chip.listed, .chip.posted, .chip.done { background: var(--good-soft); color: var(--good); }
+.chip.sold, .chip.picked_up { background: var(--info-soft); color: var(--info); }
+.chip.parts, .chip.scrap, .chip.delisted { background: var(--surface-2); color: var(--muted); }
+.chip.needs { background: var(--bad-soft); color: var(--bad); }
+
+.thumb { width: 64px; height: 64px; border-radius: 10px; flex: none; display: grid; place-items: center; overflow: hidden; }
+.thumb svg { width: 60%; height: 60%; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; }
+.cards { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.icard { display: flex; gap: 12px; text-decoration: none; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; min-width: 0; }
+.icard:hover { border-color: var(--accent); }
+.icard .grow { min-width: 0; display: grid; gap: 3px; align-content: start; }
+.clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-weight: 500; }
+
+.callout { border-radius: 12px; padding: 12px 14px; background: var(--accent-soft); color: var(--fg); display: grid; gap: 8px; }
+.callout.warn { background: var(--warn-soft); }
+.callout.good { background: var(--good-soft); }
+.callout.bad { background: var(--bad-soft); }
+
+.viewfinder { position: relative; border-radius: 14px; overflow: hidden; background: #0e0c0a; aspect-ratio: 4 / 3; max-width: 100%; display: grid; place-items: center; }
+.viewfinder .box { width: 62%; height: 38%; border: 2px solid rgba(255,255,255,0.75); border-radius: 10px; display: grid; place-items: center; }
+.viewfinder .beam { position: absolute; left: 19%; right: 19%; height: 2px; background: #ff7a1a; box-shadow: 0 0 12px #ff7a1a; top: 40%; animation: sweep 1.2s ease-in-out infinite alternate; }
+.viewfinder .fakecode { display: flex; gap: 2px; height: 46%; align-items: stretch; }
+.viewfinder .fakecode i { display: block; background: rgba(255,255,255,0.85); }
+@keyframes sweep { from { top: 34%; } to { top: 64%; } }
+@media (prefers-reduced-motion: reduce) { .viewfinder .beam { animation: none; } .spin { animation: none !important; } }
+
+.steps { display: grid; gap: 6px; }
+.step { display: flex; gap: 10px; align-items: center; font-size: 0.92rem; }
+.step .s { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 0.7rem; flex: none; background: var(--surface-2); color: var(--muted); }
+.step.done .s { background: var(--good-soft); color: var(--good); }
+.step.miss .s { background: var(--surface-2); color: var(--muted); }
+.step.run .s { border: 2px solid var(--accent); border-top-color: transparent; background: none; animation: spin 0.8s linear infinite; }
+.step.miss { color: var(--muted); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.pipeline { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 2px; }
+.pipeline span { flex: 1 0 auto; font-size: 0.72rem; text-align: center; padding: 6px 8px; border-radius: 8px; background: var(--surface-2); color: var(--muted); }
+.pipeline span.past { background: var(--good-soft); color: var(--good); }
+.pipeline span.now { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+
+.label-preview { background: #ffffff; color: #000000; border-radius: 6px; border: 1px dashed var(--line); padding: 8px 10px; width: 240px; max-width: 100%; display: grid; gap: 2px; justify-items: center; font-size: 10px; }
+.label-preview svg { max-width: 100%; height: auto; }
+.label-preview .lp-row { display: flex; justify-content: space-between; width: 100%; font-size: 10px; }
+.tag-preview { position: relative; padding-top: 18px; }
+.tag-preview::before { content: ""; position: absolute; top: 4px; left: 50%; width: 10px; height: 10px; border: 2px solid #8a7a6a; border-radius: 50%; transform: translateX(-50%); }
+
+.photos { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
+.photos > div { aspect-ratio: 1; max-width: 100%; border-radius: 10px; overflow: hidden; background: var(--surface-2); }
+.photos img { width: 100%; height: 100%; object-fit: cover; }
+
+details.lst { border: 1px solid var(--line); border-radius: 12px; }
+details.lst summary { list-style: none; cursor: pointer; padding: 12px; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+details.lst summary::-webkit-details-marker { display: none; }
+details.lst .body { padding: 0 12px 12px; display: grid; gap: 10px; }
+
+.method { display: flex; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; align-items: flex-start; }
+.method.on { border-color: var(--accent); background: var(--accent-soft); }
+.method input { margin-top: 4px; }
+.checks { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.checks label { display: flex; gap: 6px; align-items: center; }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 500; z-index: 20; max-width: calc(100% - 32px); }
+.modal-back { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 30; display: grid; place-items: center; padding: 16px; }
+.modal { background: var(--surface); border-radius: 14px; padding: 18px; width: min(420px, 100%); display: grid; gap: 12px; }
+</style>
+
+<header class="top">
+  <div class="top-inner">
+    <a class="brand" href="#home" aria-label="Longhorn Living home">
+      <svg viewBox="0 0 56 36" aria-hidden="true"><path fill="currentColor" d="M28 30c-4 0-6-3-6-7v-3c-6 0-14-3-20-12 6 3 12 4 17 3 3-1 6-2 9-2s6 1 9 2c5 1 11 0 17-3-6 9-14 12-20 12v3c0 4-2 7-6 7z"/></svg>
+      Longhorn Living
+    </a>
+    <span class="demo-pill">Preview · sample data</span>
+    <nav class="top-tabs" id="topTabs"></nav>
+    <button class="reset" data-act="reset">Reset demo</button>
+  </div>
+</header>
+<main id="app"></main>
+<nav class="bottom" id="bottomTabs"></nav>
+<div id="overlay"></div>
+
+<script>
+(function () {
+  const ICONS = {
+    home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+    loads: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 6h12v10H2zM14 9h4l3 3v4h-7"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>',
+    scan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 9v6M10 9v6M13 9v6M17 9v6"/></svg>',
+    inventory: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10"/></svg>',
+    listings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg>',
+    settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/></svg>'
+  };
+  const FURN = {
+    sofa: '<svg viewBox="0 0 48 32" fill="currentColor"><path d="M6 12a4 4 0 0 1 8 0v6h20v-6a4 4 0 0 1 8 0v12H6z" opacity=".9"/><rect x="12" y="6" width="24" height="10" rx="3" opacity=".6"/><rect x="8" y="24" width="3" height="5"/><rect x="37" y="24" width="3" height="5"/></svg>',
+    stool: '<svg viewBox="0 0 48 32" fill="currentColor"><rect x="14" y="3" width="20" height="5" rx="2"/><path d="M17 8l-4 23h2l4-23zM31 8l4 23h-2l-4-23z"/><rect x="16" y="20" width="16" height="2"/></svg>',
+    table: '<svg viewBox="0 0 48 32" fill="currentColor"><rect x="4" y="8" width="40" height="5" rx="1.5"/><rect x="8" y="13" width="3" height="16"/><rect x="37" y="13" width="3" height="16"/><rect x="11" y="18" width="26" height="2" opacity=".6"/></svg>',
+    dresser: '<svg viewBox="0 0 48 32" fill="currentColor"><rect x="8" y="2" width="32" height="26" rx="2" opacity=".85"/><g fill="var(--surface)"><rect x="11" y="6" width="26" height="5" rx="1"/><rect x="11" y="13" width="26" height="5" rx="1"/><rect x="11" y="20" width="26" height="5" rx="1"/></g><rect x="10" y="28" width="3" height="3"/><rect x="35" y="28" width="3" height="3"/></svg>',
+    chair: '<svg viewBox="0 0 48 32" fill="currentColor"><rect x="14" y="2" width="20" height="14" rx="3" opacity=".7"/><rect x="12" y="15" width="24" height="6" rx="2"/><rect x="14" y="21" width="3" height="10"/><rect x="31" y="21" width="3" height="10"/></svg>',
+    bed: '<svg viewBox="0 0 48 32" fill="currentColor"><rect x="3" y="4" width="6" height="24" rx="1"/><rect x="9" y="14" width="36" height="8" rx="2"/><rect x="11" y="10" width="9" height="5" rx="2" opacity=".6"/><rect x="42" y="22" width="3" height="6"/></svg>',
+    shelf: '<svg viewBox="0 0 48 32" fill="currentColor"><rect x="10" y="1" width="3" height="30"/><rect x="35" y="1" width="3" height="30"/><rect x="10" y="4" width="28" height="2"/><rect x="10" y="14" width="28" height="2"/><rect x="10" y="24" width="28" height="2"/><rect x="16" y="8" width="5" height="6" opacity=".6"/><rect x="25" y="18" width="8" height="6" opacity=".6"/></svg>'
+  };
+  const TONES = ['#d9c3ad', '#b9c7cf', '#c9b9d4', '#c3d1b5', '#e2c7a0', '#cfb7a8'];
+
+  const STATUS = ['received', 'identified', 'built', 'photographed', 'listed', 'sold', 'picked_up', 'parts', 'scrap'];
+  const STATUS_LABEL = { received: 'Received', identified: 'Identified', built: 'Built', photographed: 'Photographed', listed: 'Listed', sold: 'Sold', picked_up: 'Picked up', parts: 'Parts', scrap: 'Scrap' };
+  const COND = { new_in_box: 'New in box (sealed)', open_box: 'Open box, unused', like_new: 'Like new (built)', good: 'Good, light wear', fair: 'Fair, visible flaws', damaged: 'Damaged', parts_only: 'Parts only' };
+  const PLATFORMS = {
+    facebook: { name: 'Facebook Marketplace', titleMax: 100, api: false, cond: { new_in_box: 'New', open_box: 'Used, like new', like_new: 'Used, like new', good: 'Used, good', fair: 'Used, fair', damaged: 'Used, fair', parts_only: 'Used, fair' } },
+    offerup: { name: 'OfferUp', titleMax: 80, api: false, cond: { new_in_box: 'New', open_box: 'Open box', like_new: 'Reconditioned', good: 'Used', fair: 'Used', damaged: 'For parts', parts_only: 'For parts' } },
+    ebay: { name: 'eBay', titleMax: 80, api: true, cond: { new_in_box: 'New', open_box: 'Open box', like_new: 'Used', good: 'Used', fair: 'Used', damaged: 'For parts or not working', parts_only: 'For parts or not working' } },
+    craigslist: { name: 'Craigslist', titleMax: 70, api: false, cond: { new_in_box: 'new', open_box: 'like new', like_new: 'like new', good: 'good', fair: 'fair', damaged: 'salvage', parts_only: 'salvage' } },
+    mercari: { name: 'Mercari', titleMax: 80, api: false, cond: { new_in_box: 'New', open_box: 'Like new', like_new: 'Like new', good: 'Good', fair: 'Fair', damaged: 'Poor', parts_only: 'Poor' } }
+  };
+  const CROSSLISTERS = { vendoo: 'Vendoo', listperfectly: 'List Perfectly', crosslist: 'Crosslist', other: 'Other crosslister' };
+
+  // ---------------- Sample data ----------------
+  function seed() {
+    const products = [
+      { id: 'p1', title: 'Harlow 84 in. Sofa, Gray Linen', brand: 'Mercer Home', model: 'HRL-84-GRY', retailer: 'Wayfair', category: 'Sofa', dims: '84"W x 35"D x 33"H', retail: 899, kind: 'sofa', tone: 0, desc: 'Three seat sofa with track arms, kiln dried hardwood frame and removable seat cushions.' },
+      { id: 'p2', title: 'Ardent Swivel Bar Stools, Set of 2, Black', brand: 'Northline', model: 'ARD-2BK', retailer: 'Amazon', category: 'Bar stool', dims: '17"W x 17"D x 41"H', retail: 189, kind: 'stool', tone: 1, desc: 'Counter height swivel stools with faux leather seats and footrest.' },
+      { id: 'p3', title: 'Corwin Lift Top Coffee Table, Rustic Oak', brand: 'Timberfold', model: 'CRW-LT-OAK', retailer: 'Walmart', category: 'Coffee table', dims: '42"W x 22"D x 19"H', retail: 229, kind: 'table', tone: 4, desc: 'Lift top coffee table with hidden storage and open lower shelf.' },
+      { id: 'p4', title: 'Easton 6 Drawer Double Dresser, White', brand: 'Brookwell', model: 'EST-6DW', retailer: 'Home Depot', category: 'Dresser', dims: '55"W x 16"D x 31"H', retail: 349, kind: 'dresser', tone: 2, desc: 'Six drawer dresser with metal glides and anti tip kit.' },
+      { id: 'p5', title: 'Nolan Accent Chair, Mustard Velvet', brand: 'Mercer Home', model: 'NLN-AC-MUS', retailer: 'Wayfair', category: 'Accent chair', dims: '28"W x 30"D x 32"H', retail: 279, kind: 'chair', tone: 4, desc: 'Channel tufted velvet accent chair with gold tone legs.' },
+      { id: 'p6', title: 'Pratt 5 Tier Ladder Bookshelf, Walnut', brand: 'Timberfold', model: 'PRT-5T', retailer: "Lowe's", category: 'Bookshelf', dims: '24"W x 14"D x 70"H', retail: 139, kind: 'shelf', tone: 5, desc: 'Leaning ladder bookshelf with five tiers and metal frame.' }
+    ];
+    const loads = [
+      { id: 'l1', code: 'L-0001', source: 'Regional liquidator', mix: 'Wayfair and Amazon furniture', date: '2026-11-08', cost: 9800, pallets: 24, status: 'receiving' },
+      { id: 'l2', code: 'L-0002', source: 'Online returns auction', mix: 'Home Depot and Lowe’s mixed', date: '2026-11-12', cost: 7200, pallets: 18, status: 'receiving' }
+    ];
+    const pallets = [
+      { id: 'pa1', load: 'l1', n: 1, status: 'done' },
+      { id: 'pa2', load: 'l1', n: 2, status: 'open' }
+    ];
+    const items = [
+      { id: 'i1', code: 'LL-000001', load: 'l1', pallet: 'pa1', product: 'p1', status: 'listed', cond: 'like_new', notes: 'All hardware included', built: true, price: 405, loc: 'Row A1', photos: [], scanned: 'W004219873' },
+      { id: 'i2', code: 'LL-000002', load: 'l1', pallet: 'pa1', product: 'p2', status: 'sold', cond: 'open_box', notes: '', built: true, price: 90, loc: 'Row B3', photos: [], scanned: '810043921177' },
+      { id: 'i3', code: 'LL-000003', load: 'l1', pallet: 'pa1', product: 'p4', status: 'photographed', cond: 'good', notes: 'Small scuff on top left corner', built: true, price: 135, loc: 'Row A4', photos: [], scanned: '884512006631' },
+      { id: 'i4', code: 'LL-000004', load: 'l1', pallet: 'pa1', product: 'p5', status: 'built', cond: 'like_new', notes: '', built: true, price: 125, loc: 'Row C1', photos: [], scanned: 'W003318840' },
+      { id: 'i5', code: 'LL-000005', load: 'l1', pallet: 'pa2', product: 'p3', status: 'identified', cond: 'new_in_box', notes: '', built: false, price: 115, loc: 'Pallet 2', photos: [], scanned: 'B0C7KD3M2Q' },
+      { id: 'i6', code: 'LL-000006', load: 'l1', pallet: 'pa2', product: null, status: 'received', cond: null, notes: '', built: false, price: null, loc: 'Pallet 2', photos: [], scanned: 'LPNRR4421790' }
+    ];
+    const listings = [
+      ...['facebook', 'offerup', 'ebay', 'craigslist'].map(p => mkListing(products[0], items[0], p, 'posted')),
+      ...['facebook', 'offerup', 'ebay', 'craigslist'].map(p => mkListing(products[1], items[1], p, p === 'facebook' ? 'sold' : 'posted'))
+    ];
+    listings.filter(l => l.item === 'i2' && l.status === 'posted').forEach(l => { l.status = 'queued'; l.delist = true; });
+    const sales = [{ item: 'i2', platform: 'facebook', price: 90, fees: 0, buyer: 'Marcus T.', date: '2026-11-13' }];
+    return {
+      settings: { method: 'extension', crosslister: 'vendoo', platforms: ['facebook', 'offerup', 'ebay', 'craigslist'], city: 'Austin, TX', pct: { new_in_box: 50, open_box: 47, like_new: 45, good: 38, fair: 30, damaged: 20, parts_only: 10 } },
+      products, loads, pallets, items, listings, sales, nextItem: 7, scanIdx: 0
+    };
+  }
+
+  function mkListing(p, item, platform, status) {
+    const c = writeCopy(p, item, platform, 'Austin, TX');
+    return { id: 'x' + Math.random().toString(36).slice(2, 9), item: item.id, platform, status, title: c.title, desc: c.desc, price: item.price, delist: false };
+  }
+
+  // Boxes waiting on the open pallet, each resolves a different way.
+  const SCAN_QUEUE = [
+    { code: '810043921177', kind: 'UPC barcode', path: ['catalog'], product: 'p2', note: 'Seen before: same stools as LL-000002' },
+    { code: 'B0D3XQ7LN4', kind: 'Amazon ASIN', path: ['catalog-miss', 'upc-skip', 'ai'], newProduct: { id: 'p7', title: 'Kessler Platform Bed Frame, Queen, Charcoal', brand: 'Dorrance', model: 'KSL-Q-CH', retailer: 'Amazon', category: 'Bed frame', dims: '64"W x 85"D x 38"H', retail: 319, kind: 'bed', tone: 1, desc: 'Upholstered queen platform bed with wood slat support, no box spring needed.' } },
+    { code: 'LPNRR5528103', kind: 'Amazon return sticker (LPN)', path: ['catalog-miss', 'lpn'], photo: { id: 'p8', title: 'Rowan Round Dining Table, 42 in., Natural', brand: 'Timberfold', model: 'RWN-42', retailer: 'Amazon', category: 'Dining table', dims: '42" diameter x 30"H', retail: 259, kind: 'table', tone: 3, desc: 'Round pedestal dining table in solid rubberwood, seats four.' } },
+    { code: '884512006631', kind: 'UPC barcode', path: ['catalog'], product: 'p4' },
+    { code: '097855214498', kind: 'UPC barcode', path: ['catalog-miss', 'upc'], newProduct: { id: 'p9', title: 'Sloane Storage Ottoman Bench, Cream Boucle', brand: 'Brookwell', model: 'SLN-OT-CRM', retailer: 'Walmart', category: 'Ottoman', dims: '42"W x 16"D x 18"H', retail: 119, kind: 'chair', tone: 0, desc: 'Boucle upholstered storage bench with hinged lid.' } }
+  ];
+
+  // ---------------- State ----------------
+  const KEY = 'longhorn-preview-v1';
+  let S;
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  const ui = { scan: null };
+
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const money = n => n == null || n === '' || isNaN(n) ? '–' : Number(n).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  const friendly = n => n < 20 ? Math.round(n) : n < 200 ? Math.round(n / 5) * 5 : Math.round(n / 10) * 10;
+  const suggest = (retail, cond) => retail ? friendly(retail * (S.settings.pct[cond || 'open_box'] || 50) / 100) : null;
+  const prod = id => S.products.find(p => p.id === id);
+  const item = id => S.items.find(i => i.id === id);
+  const load = id => S.loads.find(l => l.id === id);
+  const pallet = id => S.pallets.find(p => p.id === id);
+  try { S = JSON.parse(localStorage.getItem(KEY)) || seed(); } catch (e) { S = seed(); }
+
+  function costBasis(it) {
+    const l = load(it.load); const its = S.items.filter(i => i.load === it.load);
+    const priced = its.filter(i => i.product && prod(i.product).retail);
+    const total = priced.reduce((a, i) => a + prod(i.product).retail, 0);
+    if (!l.cost || !its.length) return 0;
+    if (it.product && prod(it.product).retail && total) return l.cost * (priced.length / its.length) * prod(it.product).retail / total;
+    return l.cost / its.length;
+  }
+
+  function thumb(p, it, size) {
+    const s = size || 64;
+    const photo = it && it.photos && it.photos[0];
+    if (photo) return `<div class="thumb" style="width:${s}px;height:${s}px"><img src="${photo}" alt=""></div>`;
+    if (!p) return `<div class="thumb" style="width:${s}px;height:${s}px;background:var(--surface-2);color:var(--muted)">?</div>`;
+    return `<div class="thumb" style="width:${s}px;height:${s}px;background:${TONES[p.tone || 0]};color:#3a2f26">${FURN[p.kind] || FURN.table}</div>`;
+  }
+
+  function writeCopy(p, it, platform, city) {
+    const cond = it.cond || 'open_box';
+    const condTxt = COND[cond].split(' (')[0].toLowerCase();
+    const off = p.retail && it.price ? Math.round((1 - it.price / p.retail) * 100) : null;
+    const where = city ? `Pickup in ${city}.` : 'Local pickup.';
+    const flaw = it.notes ? ` ${it.notes}.` : '';
+    let title, desc;
+    if (platform === 'ebay') {
+      title = `${p.brand} ${p.title} ${p.model}`;
+      desc = `${p.brand} ${p.title}\nModel: ${p.model}\nDimensions: ${p.dims}\n\n${p.desc}\n\nCONDITION\n${COND[cond]}.${flaw} ${it.built ? 'Fully assembled and inspected.' : 'In original box.'}\n\nRetail ${money(p.retail)} at ${p.retailer}.\n\nSHIPPING\nLocal pickup in ${city || 'our warehouse'}. Freight shipping quoted on request.`;
+    } else if (platform === 'facebook') {
+      title = `${p.title}${it.built ? ', assembled' : ''}`;
+      desc = `${p.title} by ${p.brand}. ${condTxt[0].toUpperCase() + condTxt.slice(1)}.${flaw}\n\nSells for ${money(p.retail)} new at ${p.retailer}, yours for ${money(it.price)}${off ? ` (${off}% off)` : ''}.\n\nSize: ${p.dims}\n\n${where} Message me with any questions.`;
+    } else if (platform === 'offerup') {
+      title = p.title;
+      desc = `${p.brand} ${p.category.toLowerCase()}, ${condTxt}.${flaw}\nSize: ${p.dims}\nRetail ${money(p.retail)}.\n${where} Price is firm.`;
+    } else if (platform === 'craigslist') {
+      title = `${p.title} ${money(it.price)}`;
+      desc = `${p.title}\nBrand: ${p.brand}\nCondition: ${condTxt}.${flaw}\nDimensions: ${p.dims}\nRetail price ${money(p.retail)}.\n${where} Cash or app payment.`;
+    } else {
+      title = p.title;
+      desc = `${p.brand} ${p.title}. ${COND[cond]}.${flaw} ${p.dims}. ${where}`;
+    }
+    return { title: title.slice(0, PLATFORMS[platform].titleMax), desc };
+  }
+
+  // ---------------- Router ----------------
+  const TABS = [['home', 'Home'], ['loads', 'Loads'], ['scan', 'Scan'], ['inventory', 'Inventory'], ['listings', 'Listings'], ['settings', 'Settings']];
+  function route() {
+    const h = (location.hash || '#home').slice(1);
+    const m = h.match(/^([a-z]+)(?:-(.+))?$/) || [];
+    return { page: m[1] || 'home', id: m[2] };
+  }
+  function go(h) { if (location.hash === '#' + h) render(); else location.hash = h; }
+  function tabFor(page) { return { load: 'loads', pallet: 'scan', item: 'inventory' }[page] || page; }
+
+  function render() {
+    const r = route();
+    const t = tabFor(r.page);
+    $('#topTabs').innerHTML = TABS.map(([k, v]) => `<a href="#${k}" class="${t === k ? 'on' : ''}">${v}</a>`).join('');
+    $('#bottomTabs').innerHTML = TABS.map(([k, v]) => `<a href="#${k}" class="${t === k ? 'on' : ''} ${k === 'scan' ? 'scan-tab' : ''}">${k === 'scan' ? `<span class="dot">${ICONS.scan}</span>` : ICONS[k]}${v}</a>`).join('');
+    const views = { home: vHome, loads: vLoads, load: vLoad, scan: vScan, pallet: vPallet, inventory: vInventory, item: vItem, listings: vListings, settings: vSettings };
+    $('#app').innerHTML = (views[r.page] || vHome)(r.id);
+    document.querySelectorAll('svg[data-barcode]').forEach(el => {
+      try { JsBarcode(el, el.dataset.barcode, { format: 'CODE128', height: Number(el.dataset.h || 36), width: 1.4, fontSize: 11, margin: 0 }); } catch (e) {}
+    });
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', render);
+
+  // ---------------- Views ----------------
+  function vHome() {
+    const counts = Object.fromEntries(STATUS.map(s => [s, S.items.filter(i => i.status === s).length]));
+    const net = S.sales.reduce((a, s) => a + s.price - s.fees, 0);
+    const delist = S.listings.filter(l => l.delist && l.status === 'queued').length;
+    const openP = S.pallets.find(p => p.status === 'open');
+    return `
+      <div class="row between"><h1>Today</h1><a class="btn primary" href="#${openP ? 'pallet-' + openP.id : 'scan'}">${ICONS.scan.replace('<svg', '<svg width="18" height="18"')} Start scanning</a></div>
+      ${delist ? `<a class="callout bad" href="#listings" style="text-decoration:none"><b>${delist} listings need to come down.</b><span class="muted">An item sold on another platform. Tap to see them.</span></a>` : ''}
+      <div class="stats">
+        ${['received', 'identified', 'built', 'photographed', 'listed'].map(s => `<a class="stat" href="#inventory" data-filter="${s}"><span class="muted">${STATUS_LABEL[s]}</span><b>${counts[s]}</b></a>`).join('')}
+      </div>
+      <div class="stats">
+        <div class="stat"><span class="muted">Sold</span><b>${counts.sold + counts.picked_up}</b></div>
+        <div class="stat good"><span class="muted">Net sales after fees</span><b>${money(net)}</b></div>
+        <div class="stat"><span class="muted">Retail value in stock</span><b>${money(S.items.filter(i => i.product && !['sold', 'picked_up', 'scrap'].includes(i.status)).reduce((a, i) => a + prod(i.product).retail, 0))}</b></div>
+      </div>
+      <section class="panel">
+        <div class="row between"><h2>Loads</h2><a href="#loads" class="muted">All loads</a></div>
+        <div class="list">${S.loads.map(l => {
+          const opened = S.pallets.filter(p => p.load === l.id).length;
+          return `<a href="#load-${l.id}"><span class="grow"><b>${l.code}</b> <span class="muted">${esc(l.source)}</span></span><span class="muted num">${opened} of ${l.pallets} pallets</span></a>`;
+        }).join('')}</div>
+      </section>
+      <section class="panel">
+        <h2>How an item moves through</h2>
+        <div class="pipeline">${['Received', 'Identified', 'Built', 'Photographed', 'Listed', 'Sold', 'Picked up'].map(s => `<span>${s}</span>`).join('')}</div>
+        <p class="muted" style="margin:0">Scan a box off the pallet, the app finds it on the retailer site and prices it. Build it, photograph it, hang the tag, list it everywhere at once.</p>
+      </section>`;
+  }
+
+  function vLoads() {
+    return `
+      <div class="row between"><h1>Loads</h1><button class="btn primary" data-act="newLoad">+ New load</button></div>
+      <div class="grid2">${S.loads.map(l => {
+        const its = S.items.filter(i => i.load === l.id);
+        const opened = S.pallets.filter(p => p.load === l.id).length;
+        return `<a class="panel" href="#load-${l.id}" style="text-decoration:none;color:var(--fg)">
+          <div class="row between"><h2>${l.code}</h2><span class="chip ${l.status === 'complete' ? 'done' : 'open'}">${l.status}</span></div>
+          <span class="muted">${esc(l.source)} · ${esc(l.mix)} · ${l.date}</span>
+          <div class="row num"><span>Pallets <b>${opened}</b> / ${l.pallets}</span><span>Items <b>${its.length}</b></span><span>Cost <b>${money(l.cost)}</b></span></div>
+        </a>`;
+      }).join('')}</div>`;
+  }
+
+  function vLoad(id) {
+    const l = load(id); if (!l) return vLoads();
+    const pals = S.pallets.filter(p => p.load === id).sort((a, b) => a.n - b.n);
+    const its = S.items.filter(i => i.load === id);
+    const retail = its.reduce((a, i) => a + (i.product ? prod(i.product).retail : 0), 0);
+    const net = S.sales.filter(s => item(s.item).load === id).reduce((a, s) => a + s.price - s.fees, 0);
+    const listedValue = its.filter(i => ['listed', 'photographed', 'built', 'identified'].includes(i.status)).reduce((a, i) => a + (i.price || 0), 0);
+    const open = pals.find(p => p.status === 'open');
+    return `
+      <a href="#loads" class="muted">← Loads</a>
+      <div class="row between">
+        <div><h1>Load ${l.code}</h1><span class="muted">${esc(l.source)} · ${l.date} · ${pals.length} of ${l.pallets} pallets opened</span></div>
+        <div class="row">${open ? `<a class="btn" href="#pallet-${open.id}">Continue pallet ${open.n}</a>` : ''}<button class="btn primary" data-act="nextPallet" data-id="${id}">Open next pallet</button></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><span class="muted">Items found</span><b>${its.length}</b></div>
+        <div class="stat"><span class="muted">Retail value found</span><b>${money(retail)}</b></div>
+        <div class="stat"><span class="muted">Load cost</span><b>${money(l.cost)}</b></div>
+        <div class="stat ${net - l.cost >= 0 ? 'good' : 'bad'}"><span class="muted">Profit so far</span><b>${money(net - l.cost)}</b></div>
+        <div class="stat"><span class="muted">Priced, not sold yet</span><b>${money(listedValue)}</b></div>
+      </div>
+      <section class="panel">
+        <h2>Pallets</h2>
+        ${pals.length ? `<div class="list">${pals.map(p => {
+          const n = S.items.filter(i => i.pallet === p.id).length;
+          return `<a href="#pallet-${p.id}"><span><b>Pallet ${p.n}</b></span><span class="row"><span class="muted num">${n} items</span><span class="chip ${p.status}">${p.status}</span></span></a>`;
+        }).join('')}</div>` : '<p class="muted">No pallets opened yet.</p>'}
+        <p class="muted" style="margin:0">${l.pallets - pals.length} pallets still wrapped.</p>
+      </section>`;
+  }
+
+  function vScan() {
+    const open = S.pallets.filter(p => p.status === 'open');
+    return `
+      <section class="panel">
+        <h1>Unload a pallet</h1>
+        ${open.length ? `<span class="muted">Pick up where you left off:</span>${open.map(p => `<a class="btn primary big" href="#pallet-${p.id}">Load ${load(p.load).code} · Pallet ${p.n}</a>`).join('')}` : '<p class="muted">No pallet is open.</p>'}
+        <span class="muted">Or open a new pallet:</span>
+        ${S.loads.filter(l => l.status === 'receiving').map(l => `<button class="btn" data-act="nextPallet" data-id="${l.id}">Load ${l.code} · next pallet</button>`).join('')}
+      </section>
+      <section class="panel">
+        <h2>Find an item</h2>
+        <p class="muted" style="margin:0">Scan the Longhorn label or hang tag on any item to pull it up.</p>
+        <form class="row" data-form="find"><input class="in" id="findCode" name="code" placeholder="LL-000003" style="flex:1;min-width:0"><button class="btn">Find</button></form>
+      </section>`;
+  }
+
+  function vPallet(id) {
+    const p = pallet(id); if (!p) return vScan();
+    const l = load(p.load);
+    const its = S.items.filter(i => i.pallet === id).reverse();
+    const sc = ui.scan && ui.scan.pallet === id ? ui.scan : null;
+    let station = '';
+    if (p.status === 'done') {
+      station = `<section class="panel"><p style="margin:0">Pallet ${p.n} is done.</p><div class="btns"><button class="btn" data-act="reopen" data-id="${id}">Reopen it</button><button class="btn primary" data-act="nextPallet" data-id="${l.id}">Open next pallet</button></div></section>`;
+    } else if (!sc || sc.stage === 'idle') {
+      const next = SCAN_QUEUE[S.scanIdx % SCAN_QUEUE.length];
+      station = `<section class="panel">
+        ${sc && sc.saved ? savedCard(sc.saved) : ''}
+        <h2>Next box</h2>
+        <div class="viewfinder" aria-hidden="true"><div class="box"><div class="fakecode">${fakeBars(next.code)}</div></div><div class="beam"></div></div>
+        <button class="btn primary big" data-act="scan" data-id="${id}">${ICONS.scan.replace('<svg', '<svg width="20" height="20"')} Scan barcode</button>
+        <p class="muted" style="margin:0">Preview: this scans the next sample box (${esc(next.kind)}). In the real app the phone camera or a scanner gun reads it.</p>
+        <div class="btns"><button class="btn" data-act="photoOnly" data-id="${id}">No barcode? Photo it</button><button class="btn" data-act="manual" data-id="${id}">Enter by hand</button></div>
+      </section>`;
+    } else {
+      station = scanCard(sc);
+    }
+    return `
+      <a href="#load-${l.id}" class="muted">← Load ${l.code}</a>
+      <div><h1>Pallet ${p.n}</h1><span class="muted">${its.length} items · ${money(its.reduce((a, i) => a + (i.product ? prod(i.product).retail : 0), 0))} retail found</span></div>
+      ${station}
+      <section class="panel">
+        <h2>On this pallet</h2>
+        ${its.length ? `<div class="list">${its.map(i => {
+          const pr = i.product && prod(i.product);
+          return `<a href="#item-${i.id}">${thumb(pr, i, 44)}<span class="grow"><span class="mono muted">${i.code}</span><span class="t">${pr ? esc(pr.title) : '<i style="color:var(--warn)">Needs identifying</i>'}</span></span><span class="num" style="text-align:right">${money(i.price)}<br><span class="chip ${i.status}">${STATUS_LABEL[i.status]}</span></span></a>`;
+        }).join('')}</div>` : '<p class="muted">Nothing scanned yet.</p>'}
+      </section>
+      ${p.status === 'open' ? `<button class="btn" data-act="palletDone" data-id="${id}">Pallet done</button>` : ''}`;
+  }
+
+  function fakeBars(code) {
+    let out = ''; for (let i = 0; i < 34; i++) { const c = code.charCodeAt(i % code.length); out += `<i style="width:${1 + (c + i) % 3}px"></i>`; } return out;
+  }
+
+  function savedCard(sv) {
+    const it = item(sv);
+    if (!it) return '';
+    const pr = it.product && prod(it.product);
+    return `<div class="callout good"><div class="row between"><b>Saved ${it.code}. Label printed.</b><a href="#item-${it.id}">Open item</a></div>
+      <div class="label-preview"><span style="font-size:9px;text-align:center">${esc(pr ? pr.title : 'Unidentified item')}</span><svg data-barcode="${it.code}" data-h="30"></svg><div class="lp-row"><span>${load(it.load).code} · P${pallet(it.pallet).n}</span><b>${money(it.price)}</b></div></div></div>`;
+  }
+
+  function scanCard(sc) {
+    const stepNames = { catalog: 'Our catalog', 'catalog-miss': 'Our catalog', upc: 'Barcode database', 'upc-skip': 'Barcode database', ai: 'AI search of retailer sites', lpn: 'Return sticker check', photo: 'AI reading the label photo' };
+    const steps = sc.steps.map(s => `<div class="step ${s.state}"><span class="s">${s.state === 'done' ? '✓' : s.state === 'miss' ? '–' : ''}</span><span>${stepNames[s.key]}${s.note ? ` <span class="muted">· ${esc(s.note)}</span>` : ''}</span></div>`).join('');
+    let body = '';
+    if (sc.stage === 'looking') {
+      body = `<div class="steps">${steps}</div>`;
+    } else if (sc.stage === 'lpn') {
+      body = `<div class="steps">${steps}</div><div class="callout warn"><b>That's an Amazon return sticker.</b><span>It can't be looked up. Snap a photo of the box label and the AI will read the brand and model.</span></div>
+        <div class="btns"><button class="btn primary" data-act="photo" data-id="${sc.pallet}">Photo the label</button><button class="btn" data-act="cancelScan" data-id="${sc.pallet}">Cancel</button></div>`;
+    } else if (sc.stage === 'manual') {
+      body = `<div class="callout warn">Type what you see on the box. The AI searches retailer sites for it.</div>
+        <input class="in" id="manualHint" placeholder="e.g. gray sectional, Wayfair, model on label">
+        <div class="btns"><button class="btn primary" data-act="manualGo" data-id="${sc.pallet}">Search with AI</button><button class="btn" data-act="cancelScan" data-id="${sc.pallet}">Cancel</button></div>`;
+    } else if (sc.stage === 'result') {
+      const p = sc.product;
+      const price = suggest(p.retail, sc.cond);
+      const tag = sc.from === 'catalog' ? '<span class="chip listed">Seen before</span>' : `<span class="chip identified">Found via ${sc.from}</span>`;
+      body = `<div class="steps">${steps}</div>
+        <div class="row" style="align-items:flex-start;flex-wrap:nowrap">${thumb(p, null, 84)}<div style="min-width:0;display:grid;gap:4px"><b>${esc(p.title)}</b><span class="muted">${esc(p.brand)} · ${esc(p.model)} · ${esc(p.retailer)}</span><span class="muted">${esc(p.dims)}</span>${tag}</div></div>
+        <div class="grid2">
+          <label class="f">Retail price<input class="in num" id="scRetail" value="${p.retail}" inputmode="decimal" data-act-input="retail" data-id="${sc.pallet}"></label>
+          <label class="f">Condition<select class="in" id="scCond" data-act-change="cond" data-id="${sc.pallet}">${Object.entries(COND).map(([k, v]) => `<option value="${k}" ${k === sc.cond ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+        </div>
+        <div class="callout">Suggested price <b style="font-size:1.25rem" class="num" id="scPrice">${money(price)}</b> <span class="muted">${S.settings.pct[sc.cond]}% of retail</span></div>
+        <div class="btns"><button class="btn" data-act="cancelScan" data-id="${sc.pallet}">Cancel</button><button class="btn primary" data-act="saveScan" data-id="${sc.pallet}">Save + print label</button></div>`;
+    }
+    return `<section class="panel"><div class="muted">Scanned <span class="mono">${esc(sc.code || 'photo')}</span>${sc.kind ? ` · ${esc(sc.kind)}` : ''}</div>${body}</section>`;
+  }
+
+  function startScan(palletId, mode) {
+    const q = SCAN_QUEUE[S.scanIdx % SCAN_QUEUE.length];
+    S.scanIdx++; save();
+    const sc = { pallet: palletId, code: q.code, kind: q.kind, q, steps: [], stage: 'looking', cond: 'open_box' };
+    ui.scan = sc;
+    let path = q.path.slice();
+    if (mode === 'photoOnly') { sc.code = null; sc.kind = 'Photo of the box label'; path = ['photo']; sc.q = { photo: q.photo || q.newProduct || prod(q.product) }; }
+    if (mode === 'manualSearch') { sc.code = null; sc.kind = 'Typed description'; path = ['ai']; sc.q = { newProduct: q.newProduct || q.photo || prod(q.product) }; }
+    runSteps(sc, path, 0);
+  }
+
+  function runSteps(sc, path, i) {
+    if (ui.scan !== sc) return;
+    if (i >= path.length) return;
+    const key = path[i];
+    sc.steps.push({ key, state: 'run' });
+    render();
+    const delay = key === 'ai' || key === 'photo' ? 1700 : 650;
+    setTimeout(() => {
+      if (ui.scan !== sc) return;
+      const st = sc.steps[sc.steps.length - 1];
+      if (key === 'catalog') { st.state = 'done'; st.note = sc.q.note || 'Already know this one'; sc.product = prod(sc.q.product); sc.from = 'catalog'; sc.stage = 'result'; }
+      else if (key === 'catalog-miss') { st.state = 'miss'; st.note = 'Not seen before'; }
+      else if (key === 'upc-skip') { st.state = 'miss'; st.note = 'Only for numeric barcodes'; }
+      else if (key === 'upc') { st.state = 'done'; st.note = 'Name, brand and price found'; sc.product = sc.q.newProduct; sc.from = 'barcode database'; sc.stage = 'result'; }
+      else if (key === 'ai') { st.state = 'done'; st.note = `Found on ${(sc.q.newProduct || {}).retailer || 'retailer'} site`; sc.product = sc.q.newProduct; sc.from = 'AI web search'; sc.stage = 'result'; }
+      else if (key === 'lpn') { st.state = 'miss'; st.note = 'LPN stickers are not searchable'; sc.stage = 'lpn'; }
+      else if (key === 'photo') { st.state = 'done'; st.note = 'Read brand and model, matched retailer listing'; sc.product = sc.q.photo; sc.from = 'AI photo match'; sc.stage = 'result'; }
+      if (sc.stage === 'result') sc.cond = sc.product.retail > 300 ? 'open_box' : 'new_in_box';
+      if (i + 1 < path.length && sc.stage === 'looking') runSteps(sc, path, i + 1); else render();
+    }, delay);
+  }
+
+  function saveScan(palletId) {
+    const sc = ui.scan; if (!sc || !sc.product) return;
+    const retail = Number($('#scRetail') && $('#scRetail').value) || sc.product.retail;
+    let p = S.products.find(x => x.id === sc.product.id);
+    if (!p) { p = Object.assign({}, sc.product, { retail }); S.products.push(p); }
+    else p.retail = retail;
+    const pa = pallet(palletId);
+    const it = { id: 'i' + Date.now(), code: 'LL-' + String(S.nextItem++).padStart(6, '0'), load: pa.load, pallet: palletId, product: p.id, status: 'identified', cond: sc.cond, notes: '', built: false, price: suggest(retail, sc.cond), loc: 'Pallet ' + pa.n, photos: [], scanned: sc.code };
+    S.items.push(it); save();
+    ui.scan = { pallet: palletId, stage: 'idle', saved: it.id };
+    toast(`Saved ${it.code}. Box label sent to the printer.`);
+    render();
+  }
+
+  function vInventory() {
+    const f = ui.filter || '';
+    const q = (ui.q || '').toLowerCase();
+    const rows = S.items.filter(i => (!f || i.status === f) && (!q || (i.product && prod(i.product).title.toLowerCase().includes(q)) || i.code.toLowerCase().includes(q))).slice().reverse();
+    return `
+      <h1>Inventory</h1>
+      <div class="row"><input class="in" id="invQ" placeholder="Search name or LL code" value="${esc(ui.q || '')}" data-act-input="invq" style="flex:1;min-width:0;max-width:340px">
+        <select class="in" id="invF" data-act-change="invf" style="max-width:200px"><option value="">All statuses</option>${STATUS.map(s => `<option value="${s}" ${s === f ? 'selected' : ''}>${STATUS_LABEL[s]}</option>`).join('')}</select></div>
+      <span class="muted">${rows.length} items</span>
+      <div class="cards">${rows.map(i => {
+        const p = i.product && prod(i.product);
+        return `<a class="icard" href="#item-${i.id}">${thumb(p, i, 72)}<div class="grow"><span class="mono muted">${i.code} · ${load(i.load).code}</span><span class="clamp">${p ? esc(p.title) : '<i style="color:var(--warn)">Needs identifying</i>'}</span><span class="row" style="gap:8px"><b class="num">${money(i.price)}</b><span class="chip ${i.status}">${STATUS_LABEL[i.status]}</span>${i.loc ? `<span class="muted">${esc(i.loc)}</span>` : ''}</span></div></a>`;
+      }).join('')}</div>`;
+  }
+
+  function vItem(id) {
+    const it = item(id); if (!it) return vInventory();
+    const p = it.product && prod(it.product);
+    const l = load(it.load);
+    const lst = S.listings.filter(x => x.item === id);
+    const sale = S.sales.find(s => s.item === id);
+    const cost = costBasis(it);
+    const flow = ['received', 'identified', 'built', 'photographed', 'listed', 'sold', 'picked_up'];
+    const idx = flow.indexOf(it.status);
+    const method = S.settings.method;
+    return `
+      <a href="#inventory" class="muted">← Inventory</a>
+      <div class="row" style="align-items:flex-start;flex-wrap:nowrap">${thumb(p, it, 84)}
+        <div style="min-width:0;display:grid;gap:4px"><span class="mono muted">${it.code} · ${l.code} · Pallet ${pallet(it.pallet).n}</span><h1 style="font-size:1.35rem">${p ? esc(p.title) : 'Unidentified item'}</h1>
+        <span class="row" style="gap:6px"><span class="chip ${it.status}">${STATUS_LABEL[it.status]}</span>${it.built ? '<span class="chip built">Assembled</span>' : ''}</span></div></div>
+      <div class="pipeline">${flow.map((s, k) => `<span class="${k < idx ? 'past' : k === idx ? 'now' : ''}">${STATUS_LABEL[s]}</span>`).join('')}</div>
+
+      ${!p ? `<section class="panel" style="border-color:var(--warn)"><h2>Identify this item</h2><span class="muted">Scanned code <span class="mono">${esc(it.scanned)}</span> is an Amazon return sticker, which can't be searched.</span><div class="btns"><button class="btn primary" data-act="identifyPhoto" data-id="${id}">Photo the label</button></div></section>` : ''}
+
+      ${!['sold', 'picked_up'].includes(it.status) ? `<div class="btns">
+        ${!it.built && p ? `<button class="btn primary" data-act="built" data-id="${id}">Mark built</button>` : ''}
+        <button class="btn" data-act="labels" data-id="${id}">Box label / hang tag</button>
+        <button class="btn" data-act="status" data-st="parts" data-id="${id}">Keep for parts</button>
+      </div>` : ''}
+
+      ${p ? `<section class="panel">
+        <h2>Product</h2>
+        <div class="grid2" style="font-size:.93rem">
+          <div>Retail <b class="num">${money(p.retail)}</b> at ${esc(p.retailer)}</div><div>Brand ${esc(p.brand)}</div>
+          <div>Model <span class="mono">${esc(p.model)}</span></div><div>Size ${esc(p.dims)}</div>
+        </div>
+        <p class="muted" style="margin:0">${esc(p.desc)}</p>
+      </section>` : ''}
+
+      <section class="panel">
+        <h2>This unit</h2>
+        <div class="grid2">
+          <label class="f">Condition<select class="in" id="itCond" data-act-change="itcond" data-id="${id}"><option value="">Not graded</option>${Object.entries(COND).map(([k, v]) => `<option value="${k}" ${k === it.cond ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+          <label class="f">Price<input class="in num" id="itPrice" value="${it.price ?? ''}" inputmode="decimal" data-act-blur="itprice" data-id="${id}"></label>
+          <label class="f">Condition notes (shown to buyers)<input class="in" id="itNotes" value="${esc(it.notes)}" data-act-blur="itnotes" data-id="${id}"></label>
+          <label class="f">Location<input class="in" id="itLoc" value="${esc(it.loc)}" data-act-blur="itloc" data-id="${id}"></label>
+        </div>
+        ${p ? `<span class="muted">Suggested ${money(suggest(p.retail, it.cond))} for this condition · Cost basis ${money(cost)} (share of the ${money(l.cost)} load) · Profit at this price <b>${money((it.price || 0) - cost)}</b></span>` : ''}
+      </section>
+
+      <section class="panel">
+        <div class="row between"><h2>Real photos</h2><label class="btn primary" for="photoIn">Add photos</label></div>
+        <input type="file" id="photoIn" accept="image/*" multiple hidden data-id="${id}">
+        <span class="muted">After it's built: front, side, back, close up of any flaw.</span>
+        <div class="photos">${it.photos.map(src => `<div><img src="${src}" alt=""></div>`).join('') || '<span class="muted">No photos yet. Retailer photos are used as extras.</span>'}</div>
+      </section>
+
+      ${p ? `<section class="panel">
+        <div class="row between"><h2>Listings</h2><button class="btn" data-act="write" data-id="${id}" ${it.price ? '' : 'disabled'}>${lst.length ? 'Rewrite listings' : 'Write listings'}</button></div>
+        ${lst.length ? (method === 'extension'
+          ? `<div class="callout"><span>Posting with the <b>Longhorn Chrome extension</b>. It opens each site in your own logged in browser, fills the form with that site's version and posts.</span><button class="btn primary" data-act="postAll" data-id="${id}">Post to all</button></div>`
+          : `<div class="callout"><span>Posting with <b>${CROSSLISTERS[S.settings.crosslister]}</b>. Download the import file and load it in ${CROSSLISTERS[S.settings.crosslister]}. eBay still posts directly.</span><button class="btn primary" data-act="export" data-id="${id}">Export for ${CROSSLISTERS[S.settings.crosslister]}</button></div>`) : `<span class="muted">One tap writes a separate listing for each platform you sell on.</span>`}
+        ${lst.map(x => `<details class="lst"><summary><b>${PLATFORMS[x.platform].name}</b><span class="row" style="gap:8px"><span class="num">${money(x.price)}</span><span class="chip ${x.delist ? 'needs' : x.status}">${x.delist ? 'take down' : x.status}</span></span></summary>
+          <div class="body"><label class="f">Title<input class="in" value="${esc(x.title)}" readonly></label><label class="f">Description<textarea class="in" rows="6" readonly>${esc(x.desc)}</textarea></label>
+          <span class="muted">Condition shown as "${PLATFORMS[x.platform].cond[it.cond || 'open_box']}"</span>
+          <div class="row"><button class="btn" data-act="copy" data-text="${esc(x.title)}">Copy title</button><button class="btn" data-act="copy" data-text="${esc(x.desc)}">Copy description</button>${x.delist ? `<button class="btn primary" data-act="delisted" data-id="${x.id}">Mark taken down</button>` : ''}</div></div></details>`).join('')}
+      </section>` : ''}
+
+      <section class="panel">
+        <h2>${sale ? 'Sale' : 'Mark sold'}</h2>
+        ${sale ? `<p style="margin:0">Sold on ${PLATFORMS[sale.platform] ? PLATFORMS[sale.platform].name : sale.platform} for <b>${money(sale.price)}</b> to ${esc(sale.buyer)} on ${sale.date}. Profit <b>${money(sale.price - sale.fees - cost)}</b>.</p>`
+          : `<div class="grid2"><label class="f">Sold on<select class="in" id="soldOn">${Object.entries(PLATFORMS).map(([k, v]) => `<option value="${k}">${v.name}</option>`).join('')}</select></label><label class="f">Sale price<input class="in num" id="soldPrice" value="${it.price ?? ''}"></label></div>
+             <button class="btn primary" data-act="sold" data-id="${id}" ${p ? '' : 'disabled'}>Mark sold and flag other listings to come down</button>`}
+      </section>`;
+  }
+
+  function vListings() {
+    const delist = S.listings.filter(l => l.delist && l.status === 'queued');
+    const ready = S.items.filter(i => i.status === 'photographed' || i.status === 'built');
+    const queued = S.listings.filter(l => l.status === 'queued' && !l.delist);
+    const live = S.listings.filter(l => l.status === 'posted');
+    const row = l => { const it = item(l.item); const p = prod(it.product); return `<a href="#item-${it.id}"><span class="grow"><span class="mono muted">${it.code}</span><span class="t">${esc(p.title)}</span></span><span class="muted" style="text-align:right">${PLATFORMS[l.platform].name}<br><span class="num">${money(l.price)}</span></span></a>`; };
+    const m = S.settings.method === 'extension' ? 'Longhorn Chrome extension' : CROSSLISTERS[S.settings.crosslister];
+    return `
+      <div class="row between"><h1>Listings</h1><span class="muted">Posting with <a href="#settings">${m}</a></span></div>
+      ${delist.length ? `<section class="panel" style="border-color:var(--bad)"><h2 style="color:var(--bad)">Take these down: sold elsewhere</h2><div class="list">${delist.map(row).join('')}</div></section>` : ''}
+      <section class="panel"><h2>Ready to list (${ready.length})</h2><span class="muted">Built or photographed, no listings live yet.</span>
+        <div class="list">${ready.map(i => `<a href="#item-${i.id}"><span class="grow"><span class="mono muted">${i.code}</span><span class="t">${esc(prod(i.product).title)}</span></span><b class="num">${money(i.price)}</b></a>`).join('') || '<span class="muted">None.</span>'}</div></section>
+      <section class="panel"><h2>Queued for posting (${queued.length})</h2><div class="list">${queued.map(row).join('') || '<span class="muted">None.</span>'}</div></section>
+      <section class="panel"><h2>Live (${live.length})</h2><div class="list">${live.map(row).join('') || '<span class="muted">None.</span>'}</div></section>`;
+  }
+
+  function vSettings() {
+    const st = S.settings;
+    return `
+      <h1>Settings</h1>
+      <section class="panel">
+        <h2>How listings get posted</h2>
+        <span class="muted">eBay always posts directly. This choice is for Facebook Marketplace, OfferUp, Craigslist and Mercari, which have no public way to post.</span>
+        <label class="method ${st.method === 'extension' ? 'on' : ''}"><input type="radio" name="method" value="extension" ${st.method === 'extension' ? 'checked' : ''} data-act-change="method">
+          <span><b>Longhorn Chrome extension</b> (free)<br><span class="muted">Runs in your own browser where you're already logged in. Fills in each site's form with its own version of the listing and photos, then posts.</span></span></label>
+        <label class="method ${st.method === 'crosslister' ? 'on' : ''}"><input type="radio" name="method" value="crosslister" ${st.method === 'crosslister' ? 'checked' : ''} data-act-change="method">
+          <span style="flex:1;display:grid;gap:8px"><span><b>A paid crosslisting app</b><br><span class="muted">Vendoo, List Perfectly, Crosslist or similar. We export your items in a file it can import.</span></span>
+          <select class="in" id="crossSel" data-act-change="crosslister" style="max-width:240px">${Object.entries(CROSSLISTERS).map(([k, v]) => `<option value="${k}" ${k === st.crosslister ? 'selected' : ''}>${v}</option>`).join('')}</select></span></label>
+        <span class="f" style="font-weight:500;color:var(--muted);font-size:.86rem">Platforms to list on</span>
+        <div class="checks">${Object.entries(PLATFORMS).map(([k, v]) => `<label><input type="checkbox" value="${k}" ${st.platforms.includes(k) ? 'checked' : ''} data-act-change="plat"> ${v.name}</label>`).join('')}</div>
+      </section>
+      <section class="panel">
+        <h2>Pricing</h2>
+        <span class="muted">Suggested price is retail times the percent for the item's condition.</span>
+        <div class="stats">${Object.keys(COND).map(c => `<label class="f">${COND[c].split(' (')[0]} %<input class="in num" id="pct_${c}" value="${st.pct[c]}" inputmode="numeric" data-act-blur="pct" data-c="${c}"></label>`).join('')}</div>
+      </section>
+      <section class="panel">
+        <h2>Connected accounts</h2>
+        ${[['QuickBooks Online', 'Sales and load costs post to the books automatically.'], ['Gmail', 'Receipts and pickup confirmations go out from the business email.'], ['eBay', 'One click posting and delisting, plus recent sold prices to help set your price.']].map(([n, d]) => `<div class="row between" style="border:1px solid var(--line);border-radius:12px;padding:12px"><span style="min-width:0;flex:1"><b>${n}</b><br><span class="muted">${d}</span></span><span class="chip">Coming next</span></div>`).join('')}
+      </section>`;
+  }
+
+  // ---------------- Actions ----------------
+  function toast(msg) {
+    const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; t.setAttribute('role', 'status');
+    document.body.appendChild(t); setTimeout(() => t.remove(), 2600);
+  }
+  function modal(html) { $('#overlay').innerHTML = `<div class="modal-back" data-act="closeModal"><div class="modal" data-stop>${html}</div></div>`; $('#overlay').querySelectorAll('svg[data-barcode]').forEach(el => { try { JsBarcode(el, el.dataset.barcode, { format: 'CODE128', height: Number(el.dataset.h || 36), width: 1.4, fontSize: 11, margin: 0 }); } catch (e) {} }); }
+
+  document.addEventListener('click', e => {
+    const stop = e.target.closest('[data-stop]');
+    const el = e.target.closest('[data-act]');
+    if (!el || (stop && el.dataset.act === 'closeModal' && el !== e.target)) return;
+    if (stop && !stop.contains(el) && el.dataset.act !== 'closeModal') return;
+    const a = el.dataset.act, id = el.dataset.id;
+    if (el.dataset.filter) { ui.filter = el.dataset.filter; }
+    const acts = {
+      reset() { S = seed(); ui.scan = null; save(); go('home'); toast('Demo reset to sample data.'); },
+      closeModal() { $('#overlay').innerHTML = ''; },
+      newLoad() {
+        modal(`<h2>New load</h2><span class="muted">Just what the seller told you.</span>
+          <label class="f">Bought from<input class="in" id="nlSource" value="Online returns auction"></label>
+          <div class="grid2"><label class="f">Pallets<input class="in num" id="nlPallets" value="20"></label><label class="f">Total cost<input class="in num" id="nlCost" value="8500"></label></div>
+          <div class="btns"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="createLoad">Create load</button></div>`);
+      },
+      createLoad() {
+        const n = S.loads.length + 1;
+        const l = { id: 'l' + Date.now(), code: 'L-' + String(n).padStart(4, '0'), source: $('#nlSource').value || 'Unknown', mix: 'Mixed returns', date: new Date().toISOString().slice(0, 10), cost: Number($('#nlCost').value) || 0, pallets: Number($('#nlPallets').value) || 0, status: 'receiving' };
+        S.loads.push(l); save(); $('#overlay').innerHTML = ''; go('load-' + l.id);
+      },
+      nextPallet() {
+        const ps = S.pallets.filter(p => p.load === id);
+        ps.forEach(p => { if (p.status === 'open') p.status = 'done'; });
+        const p = { id: 'pa' + Date.now(), load: id, n: ps.length + 1, status: 'open' };
+        S.pallets.push(p); save(); ui.scan = null; go('pallet-' + p.id);
+      },
+      reopen() { pallet(id).status = 'open'; save(); render(); },
+      palletDone() { pallet(id).status = 'done'; save(); ui.scan = null; toast('Pallet marked done.'); render(); },
+      scan() { startScan(id); },
+      photoOnly() { startScan(id, 'photoOnly'); },
+      manual() { ui.scan = { pallet: id, stage: 'manual', steps: [] }; render(); },
+      manualGo() { startScan(id, 'manualSearch'); },
+      photo() { const sc = ui.scan; sc.stage = 'looking'; runSteps(sc, ['photo'], 0); },
+      cancelScan() { ui.scan = { pallet: id, stage: 'idle' }; render(); },
+      saveScan() { saveScan(id); },
+      built() { const it = item(id); it.built = true; it.status = 'built'; if (it.cond === 'new_in_box' || it.cond === 'open_box') { it.cond = 'like_new'; it.price = suggest(prod(it.product).retail, 'like_new'); } save(); toast('Marked built. Print the hang tag next.'); render(); },
+      status() { item(id).status = el.dataset.st; save(); render(); },
+      labels() {
+        const it = item(id); const p = it.product && prod(it.product);
+        modal(`<h2>Labels for ${it.code}</h2><span class="muted">Same barcode on both. The box label goes on at unboxing, the hang tag goes on the built item.</span>
+          <div class="row" style="align-items:flex-start">
+            <div style="display:grid;gap:4px"><span class="muted">Box label, 2 x 1 in</span><div class="label-preview"><span style="font-size:9px;text-align:center">${esc(p ? p.title : 'Unidentified item')}</span><svg data-barcode="${it.code}" data-h="30"></svg><div class="lp-row"><span>${load(it.load).code} · P${pallet(it.pallet).n}</span><b>${money(it.price)}</b></div></div></div>
+            <div style="display:grid;gap:4px"><span class="muted">Hang tag</span><div class="label-preview tag-preview"><b style="font-size:11px">Longhorn Living</b><span style="font-size:9px;text-align:center">${esc(p ? p.title : '')}</span><svg data-barcode="${it.code}" data-h="30"></svg><b style="font-size:16px">${money(it.price)}</b></div></div>
+          </div>
+          <button class="btn primary" data-act="closeModal">Done</button>`);
+      },
+      identifyPhoto() {
+        const it = item(id);
+        const np = { id: 'p10', title: 'Ellery Floating TV Stand, 60 in., Black Oak', brand: 'Dorrance', model: 'ELR-60-BO', retailer: 'Amazon', category: 'TV stand', dims: '60"W x 13"D x 10"H', retail: 169, kind: 'shelf', tone: 2, desc: 'Wall mounted media console with LED strip and two drop down doors.' };
+        modal(`<h2>Reading the label photo…</h2><div class="steps"><div class="step run"><span class="s"></span>AI reading brand and model, searching retailer sites</div></div>`);
+        setTimeout(() => {
+          if (!S.products.find(x => x.id === np.id)) S.products.push(np);
+          it.product = np.id; it.status = 'identified'; it.cond = 'open_box'; it.price = suggest(np.retail, 'open_box'); save();
+          $('#overlay').innerHTML = ''; toast('Identified from the label photo.'); render();
+        }, 1700);
+      },
+      write() {
+        const it = item(id); const p = prod(it.product);
+        S.listings = S.listings.filter(x => x.item !== id || x.status === 'posted' || x.status === 'sold');
+        S.settings.platforms.forEach(pl => { if (!S.listings.find(x => x.item === id && x.platform === pl)) { const c = writeCopy(p, it, pl, S.settings.city); S.listings.push({ id: 'x' + Math.random().toString(36).slice(2, 9), item: id, platform: pl, status: 'draft', title: c.title, desc: c.desc, price: it.price, delist: false }); } });
+        save(); toast('Listings written for ' + S.settings.platforms.length + ' platforms.'); render();
+      },
+      postAll() {
+        const ls = S.listings.filter(x => x.item === id && x.status === 'draft');
+        modal(`<h2>Posting ${ls.length} listings</h2><div class="steps" id="postSteps">${ls.map(x => `<div class="step run" data-pl="${x.id}"><span class="s"></span>${PLATFORMS[x.platform].name} <span class="muted">${PLATFORMS[x.platform].api ? 'via eBay connection' : 'via Chrome extension'}</span></div>`).join('')}</div>`);
+        ls.forEach((x, k) => setTimeout(() => {
+          x.status = 'posted'; const st = document.querySelector(`[data-pl="${x.id}"]`); if (st) { st.className = 'step done'; st.querySelector('.s').textContent = '✓'; }
+          if (k === ls.length - 1) { const it = item(id); if (!['sold', 'picked_up'].includes(it.status)) it.status = 'listed'; save(); setTimeout(() => { $('#overlay').innerHTML = ''; toast('Live on ' + ls.length + ' platforms.'); render(); }, 700); }
+        }, 700 * (k + 1)));
+      },
+      export() { toast('Export file ready (in the real app this downloads a CSV).'); S.listings.filter(x => x.item === id && x.status === 'draft').forEach(x => x.status = 'queued'); save(); render(); },
+      copy() { const t = el.dataset.text; if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => toast('Copied.'), () => toast('Copy blocked here. Select the text instead.')); },
+      delisted() { const x = S.listings.find(l => l.id === id); x.status = 'delisted'; x.delist = false; save(); toast('Marked as taken down.'); render(); },
+      sold() {
+        const it = item(id); const pl = $('#soldOn').value; const price = Number($('#soldPrice').value) || it.price;
+        S.sales.push({ item: id, platform: pl, price, fees: pl === 'ebay' ? Math.round(price * 0.13) : 0, buyer: 'Walk up buyer', date: new Date().toISOString().slice(0, 10) });
+        it.status = 'sold';
+        S.listings.filter(x => x.item === id).forEach(x => { if (x.platform === pl) x.status = 'sold'; else if (x.status === 'posted') { x.status = 'queued'; x.delist = true; } });
+        save(); toast('Sold. Other listings flagged to come down.'); render();
+      }
+    };
+    if (acts[a]) { e.preventDefault(); acts[a](); }
+  });
+
+  document.addEventListener('change', e => {
+    const el = e.target; const a = el.dataset.actChange;
+    if (el.id === 'photoIn') {
+      const it = item(el.dataset.id);
+      Array.from(el.files || []).forEach(f => it.photos.push(URL.createObjectURL(f)));
+      if (['identified', 'built', 'received'].includes(it.status)) it.status = 'photographed';
+      render(); toast('Photos added (this preview keeps them until you reload).');
+      return;
+    }
+    if (!a) return;
+    if (a === 'cond') { ui.scan.cond = el.value; const r = Number($('#scRetail').value) || ui.scan.product.retail; $('#scPrice').textContent = money(suggest(r, el.value)); render(); }
+    if (a === 'itcond') { const it = item(el.dataset.id); it.cond = el.value || null; if (it.product) it.price = suggest(prod(it.product).retail, it.cond); save(); render(); }
+    if (a === 'invf') { ui.filter = el.value; render(); }
+    if (a === 'method') { S.settings.method = el.value; save(); render(); toast(el.value === 'extension' ? 'Posting with the Chrome extension.' : 'Posting with a crosslisting app.'); }
+    if (a === 'crosslister') { S.settings.crosslister = el.value; S.settings.method = 'crosslister'; save(); render(); }
+    if (a === 'plat') { const on = Array.from(document.querySelectorAll('[data-act-change="plat"]:checked')).map(x => x.value); S.settings.platforms = on; save(); }
+  });
+  document.addEventListener('input', e => {
+    const el = e.target; const a = el.dataset.actInput;
+    if (a === 'retail' && ui.scan) { $('#scPrice').textContent = money(suggest(Number(el.value) || 0, ui.scan.cond)); }
+    if (a === 'invq') { ui.q = el.value; const pos = el.selectionStart; render(); const n = $('#invQ'); n.focus(); n.setSelectionRange(pos, pos); }
+  });
+  document.addEventListener('focusout', e => {
+    const el = e.target; const a = el.dataset.actBlur; if (!a) return;
+    if (a === 'pct') { S.settings.pct[el.dataset.c] = Number(el.value) || 0; save(); return; }
+    const it = item(el.dataset.id); if (!it) return;
+    if (a === 'itprice') it.price = Number(el.value) || null;
+    if (a === 'itnotes') it.notes = el.value;
+    if (a === 'itloc') it.loc = el.value;
+    save();
+  });
+  document.addEventListener('submit', e => {
+    if (e.target.dataset.form === 'find') {
+      e.preventDefault(); const c = $('#findCode').value.trim().toUpperCase();
+      const it = S.items.find(i => i.code === c || (i.scanned || '').toUpperCase() === c);
+      if (it) go('item-' + it.id); else toast('No item found for ' + c);
+    }
+  });
+
+  render();
+})();
+</script>
