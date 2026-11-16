@@ -158,7 +158,7 @@ export function ScanStation(props: {
       {!result && !busy && (
         <section className="card space-y-3">
           <h2 className="font-semibold">Next box</h2>
-          <Scanner onScan={onScan} />
+          <Scanner onScan={onScan} productOnly />
           <div className="grid grid-cols-2 gap-2">
             <button className="btn-secondary" onClick={() => photoInput.current?.click()}>
               🖼️ No barcode? Photo it
