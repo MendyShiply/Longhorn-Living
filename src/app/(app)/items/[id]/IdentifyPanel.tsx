@@ -5,6 +5,7 @@ import { attachProduct } from "@/app/actions";
 import { blobToBase64, resizeImage } from "@/lib/image";
 import type { ProductDraft } from "@/lib/types";
 import { money } from "@/lib/pricing";
+import { SearchLinks } from "@/components/SearchLinks";
 
 export function IdentifyPanel({ itemId, scannedCode }: { itemId: string; scannedCode: string | null }) {
   const router = useRouter();
@@ -45,6 +46,7 @@ export function IdentifyPanel({ itemId, scannedCode }: { itemId: string; scanned
           Scanned code: <span className="font-mono">{scannedCode}</span>
         </p>
       )}
+      {scannedCode && !/^LPN/i.test(scannedCode) && <SearchLinks code={scannedCode} />}
       <input className="input" value={hint} onChange={(e) => setHint(e.target.value)} placeholder="Describe it, or type a model number" />
       <div className="flex flex-wrap gap-2">
         <button className="btn-primary" disabled={busy} onClick={() => run()}>

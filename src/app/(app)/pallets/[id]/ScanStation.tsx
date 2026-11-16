@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Scanner } from "@/components/Scanner";
+import { SearchLinks } from "@/components/SearchLinks";
 import { receiveItem, setPalletStatus, openNextPallet } from "@/app/actions";
 import { blobToBase64, resizeImage } from "@/lib/image";
 import { CONDITION_LABELS, type ItemCondition, type Product, type ProductDraft } from "@/lib/types";
@@ -208,6 +209,9 @@ export function ScanStation(props: {
           {result.status === "not_found" && (
             <div className="space-y-3">
               <p className="text-amber-800">{result.message}</p>
+              {code && result.kind !== "lpn" && (
+                <SearchLinks code={code} label="Search the retail sites, then type the name and retail price below:" />
+              )}
               <input className="input" placeholder="What do you see? e.g. 'grey 3 seat sofa, Wayfair, Zipcode Design'" value={hint} onChange={(e) => setHint(e.target.value)} />
               <div className="grid grid-cols-2 gap-2">
                 <button className="btn-secondary" onClick={() => photoInput.current?.click()}>
@@ -256,6 +260,15 @@ export function ScanStation(props: {
               Suggested price: <b className="text-lg">{money(price)}</b> <span className="muted">({pct}% of retail)</span>
             </div>
           </div>
+
+          {code && result.status !== "not_found" && result.kind !== "lpn" && (
+            <details className="text-sm">
+              <summary className="cursor-pointer text-brand-600">Double check the price on retail sites</summary>
+              <div className="mt-2">
+                <SearchLinks code={code} label="" />
+              </div>
+            </details>
+          )}
 
           <div className="grid grid-cols-2 gap-2">
             <button className="btn-secondary" onClick={reset}>
